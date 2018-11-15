@@ -8,21 +8,21 @@ export class EventRepository extends DefaultCrudRepository<
   Event,
   typeof Event.prototype.id
   > {
-  // public readonly actions: HasManyRepositoryFactory<
-  //   Action,
-  //   typeof Action.prototype.id
-  //   >
+  public readonly actions: HasManyRepositoryFactory<
+    Action,
+    typeof Action.prototype.id
+    >
 
   constructor(
     @inject('datasources.mongo') dataSource: MongoDataSource,
-    // @repository.getter(ActionRepository)
-    // protected actionRepositoryGetter: Getter<ActionRepository>,
+    @repository.getter('ActionRepository')
+    protected actionRepositoryGetter: Getter<ActionRepository>,
   ) {
     super(Event, dataSource);
 
-    // this.actions = this._createHasManyRepositoryFactoryFor(
-    //   'actions',
-    //   actionRepositoryGetter
-    // )
+    this.actions = this._createHasManyRepositoryFactoryFor(
+      'actions',
+      actionRepositoryGetter
+    )
   }
 }

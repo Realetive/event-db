@@ -70,8 +70,8 @@ export class Event extends Entity {
   })
   endTimezone?: string;
 
-  // @hasMany(() => Action)
-  // actions?: Action[];
+  @hasMany(() => Action)
+  actions?: Action[];
 
   constructor(data?: Partial<Event>) {
     super(data);
