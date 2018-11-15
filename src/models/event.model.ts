@@ -1,4 +1,5 @@
-import {Entity, model, property} from '@loopback/repository';
+import { Entity, model, property, hasMany } from '@loopback/repository';
+import { Action } from './action.model';
 
 @model()
 export class Event extends Entity {
@@ -17,7 +18,7 @@ export class Event extends Entity {
 
   @property({
     type: 'string',
-    default: 123,
+    default: '',
   })
   description?: string;
 
@@ -68,6 +69,9 @@ export class Event extends Entity {
     default: '',
   })
   endTimezone?: string;
+
+  // @hasMany(() => Action)
+  // actions?: Action[];
 
   constructor(data?: Partial<Event>) {
     super(data);

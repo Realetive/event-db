@@ -1,4 +1,5 @@
-import {Entity, model, property} from '@loopback/repository';
+import { Entity, model, property, belongsTo } from '@loopback/repository';
+import { Event } from './event.model';
 
 @model()
 export class Action extends Entity {
@@ -13,6 +14,9 @@ export class Action extends Entity {
     required: true,
   })
   start: string;
+
+  // @belongsTo(() => Event)
+  // event: string;
 
   constructor(data?: Partial<Action>) {
     super(data);
