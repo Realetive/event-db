@@ -10,13 +10,13 @@ export class EventRepository extends DefaultCrudRepository<
   > {
   public readonly actions: HasManyRepositoryFactory<
     Action,
-    typeof Action.prototype.id
+    typeof Event.prototype.id
     >
 
   constructor(
     @inject('datasources.mongo') dataSource: MongoDataSource,
     @repository.getter('ActionRepository')
-    protected actionRepositoryGetter: Getter<ActionRepository>,
+    protected actionRepositoryGetter: Getter<ActionRepository>
   ) {
     super(Event, dataSource);
 
@@ -24,5 +24,9 @@ export class EventRepository extends DefaultCrudRepository<
       'actions',
       actionRepositoryGetter
     )
+  }
+
+  public createEvent(event: Event) {
+    //
   }
 }

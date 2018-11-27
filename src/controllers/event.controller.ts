@@ -40,7 +40,7 @@ export class EventController {
     responses: {
       '200': {
         description: 'Event model count',
-        content: {'application/json': {schema: CountSchema}},
+        content: { 'application/json': { schema: CountSchema } }
       },
     },
   })
@@ -56,7 +56,7 @@ export class EventController {
         description: 'Array of Event model instances',
         content: {
           'application/json': {
-            schema: {type: 'array', items: {'x-ts-type': Event}},
+            schema: { type: 'array', items: { 'x-ts-type': Event } },
           },
         },
       },
@@ -65,6 +65,7 @@ export class EventController {
   async find(
     @param.query.object('filter', getFilterSchemaFor(Event)) filter?: Filter,
   ): Promise<Event[]> {
+    console.log('!!!');
     return await this.eventRepository.find(filter);
   }
 
@@ -72,7 +73,7 @@ export class EventController {
     responses: {
       '200': {
         description: 'Event PATCH success count',
-        content: {'application/json': {schema: CountSchema}},
+        content: { 'application/json': { schema: CountSchema } },
       },
     },
   })
@@ -87,7 +88,7 @@ export class EventController {
     responses: {
       '200': {
         description: 'Event model instance',
-        content: {'application/json': {schema: {'x-ts-type': Event}}},
+        content: { 'application/json': { schema: { 'x-ts-type': Event } } },
       },
     },
   })

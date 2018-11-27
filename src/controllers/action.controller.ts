@@ -15,20 +15,20 @@ import {
   del,
   requestBody,
 } from '@loopback/rest';
-import {Action} from '../models';
-import {ActionRepository} from '../repositories';
+import { Action } from '../models';
+import { ActionRepository } from '../repositories';
 
 export class ActionController {
   constructor(
     @repository(ActionRepository)
-    public actionRepository : ActionRepository,
-  ) {}
+    public actionRepository: ActionRepository,
+  ) { }
 
   @post('/actions', {
     responses: {
       '200': {
         description: 'Action model instance',
-        content: {'application/json': {schema: {'x-ts-type': Action}}},
+        content: { 'application/json': { schema: { 'x-ts-type': Action } } },
       },
     },
   })
@@ -40,7 +40,7 @@ export class ActionController {
     responses: {
       '200': {
         description: 'Action model count',
-        content: {'application/json': {schema: CountSchema}},
+        content: { 'application/json': { schema: CountSchema } },
       },
     },
   })
@@ -56,7 +56,7 @@ export class ActionController {
         description: 'Array of Action model instances',
         content: {
           'application/json': {
-            schema: {type: 'array', items: {'x-ts-type': Action}},
+            schema: { type: 'array', items: { 'x-ts-type': Action } },
           },
         },
       },
@@ -72,7 +72,7 @@ export class ActionController {
     responses: {
       '200': {
         description: 'Action PATCH success count',
-        content: {'application/json': {schema: CountSchema}},
+        content: { 'application/json': { schema: CountSchema } },
       },
     },
   })
@@ -87,7 +87,7 @@ export class ActionController {
     responses: {
       '200': {
         description: 'Action model instance',
-        content: {'application/json': {schema: {'x-ts-type': Action}}},
+        content: { 'application/json': { schema: { 'x-ts-type': Action } } },
       },
     },
   })

@@ -16,7 +16,11 @@ export class Action extends Entity {
   start: string;
 
   @belongsTo(() => Event)
-  event: string;
+  eventId: string;
+
+  getId() {
+    return this.id;
+  }
 
   constructor(data?: Partial<Action>) {
     super(data);
