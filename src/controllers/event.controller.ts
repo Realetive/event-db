@@ -38,13 +38,19 @@ export class EventController {
   async create(@requestBody() event: Event): Promise<Event> {
     const newEvent = await this.eventRepository.create(event);
 
-    if (newEvent.recurrenceRule) {
+    if (newEvent.id && newEvent.recurrenceRule) {
       const options = RRule.parseString(newEvent.recurrenceRule)
       options.dtstart = new Date(newEvent.start);
       const rrule = new RRule(options);
 
-      let actions: Action[] = [];
+      const actions = rrule.all().map((date: Date) => {
+        return {
+          start: date.toISOString(),
+          eventId: newEvent.id
+        }
+      });
 
+      /*
       async function asyncForEach(array: Date[], callback: Function) {
         for (let index = 0; index < array.length; index++) {
           await callback(array[index], index, array);
@@ -59,8 +65,10 @@ export class EventController {
 
         actions.push(action);
       })
+      */
 
-      newEvent.actions = actions;
+
+      newEvent.actions = await this.actionRepository.createAll(actions);
     }
 
     return newEvent;
