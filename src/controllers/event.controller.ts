@@ -15,25 +15,55 @@ import {
   del,
   requestBody,
 } from '@loopback/rest';
-import {Event} from '../models';
-import {EventRepository} from '../repositories';
+import { Event, Action } from '../models';
+import { EventRepository, ActionRepository } from '../repositories';
+import { RRule, RRuleSet, rrulestr } from 'rrule';
 
 export class EventController {
   constructor(
     @repository(EventRepository)
-    public eventRepository : EventRepository,
-  ) {}
+    public eventRepository: EventRepository,
+    @repository(ActionRepository)
+    public actionRepository: ActionRepository,
+  ) { }
 
   @post('/events', {
     responses: {
       '200': {
         description: 'Event model instance',
-        content: {'application/json': {schema: {'x-ts-type': Event}}},
+        content: { 'application/json': { schema: { 'x-ts-type': Event } } },
       },
     },
   })
   async create(@requestBody() event: Event): Promise<Event> {
-    return await this.eventRepository.create(event);
+    const newEvent = await this.eventRepository.create(event);
+
+    if (newEvent.recurrenceRule) {
+      const options = RRule.parseString(newEvent.recurrenceRule)
+      options.dtstart = new Date(newEvent.start);
+      const rrule = new RRule(options);
+
+      let actions: Action[] = [];
+
+      async function asyncForEach(array: Date[], callback: Function) {
+        for (let index = 0; index < array.length; index++) {
+          await callback(array[index], index, array);
+        }
+      }
+
+      await asyncForEach(rrule.all(), async (date: Date) => {
+        const action: Action = await this.actionRepository.create({
+          start: date.toISOString(),
+          eventId: newEvent.id
+        });
+
+        actions.push(action);
+      })
+
+      newEvent.actions = actions;
+    }
+
+    return newEvent;
   }
 
   @get('/events/count', {
