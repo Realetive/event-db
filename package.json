@@ -1,7 +1,7 @@
 {
-  "name": "test1",
+  "name": "Calendar",
   "version": "1.0.0",
-  "description": "test1",
+  "description": "Calendar",
   "keywords": [
     "loopback-application",
     "loopback"
