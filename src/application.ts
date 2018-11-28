@@ -1,15 +1,27 @@
-import {BootMixin} from '@loopback/boot';
-import {ApplicationConfig} from '@loopback/core';
-import {RepositoryMixin} from '@loopback/repository';
-import {RestApplication} from '@loopback/rest';
-import {ServiceMixin} from '@loopback/service-proxy';
-import {MySequence} from './sequence';
+import { BootMixin } from '@loopback/boot';
+import { ApplicationConfig } from '@loopback/core';
+import { RepositoryMixin } from '@loopback/repository';
+import { RestApplication } from '@loopback/rest';
+import { ServiceMixin } from '@loopback/service-proxy';
+import { MySequence } from './sequence';
 import * as path from 'path';
 
 export class Test1Application extends BootMixin(
   ServiceMixin(RepositoryMixin(RestApplication)),
 ) {
   constructor(options: ApplicationConfig = {}) {
+    options = Object.assign(
+      {},
+      {
+        rest: {
+          port: 3000,
+          openApiSpec: {
+            servers: [{ url: 'http://127.0.0.1:3000' }]
+          }
+        }
+      }
+    );
+
     super(options);
 
     // Set up the custom sequence
