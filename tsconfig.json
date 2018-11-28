@@ -1,4 +1,12 @@
 {
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "*": [
+        "types/*"
+      ]
+    }
+  },
   "$schema": "http://json.schemastore.org/tsconfig",
   "extends": "./node_modules/@loopback/build/config/tsconfig.common.json",
   "include": [
