@@ -18,6 +18,11 @@ import {
 import { Event, Action } from '../models';
 import { EventRepository, ActionRepository } from '../repositories';
 import { RRule, RRuleSet, rrulestr } from 'rrule';
+import { remove } from 'fs-extra';
+
+interface postRequest {
+  models: string
+}
 
 export class EventController {
   constructor(
@@ -28,36 +33,60 @@ export class EventController {
   ) { }
 
   @post('/events', {
+
     responses: {
       '200': {
         description: 'Event model instance',
-        content: { 'application/json': { schema: { 'x-ts-type': Event } } },
+        content: {
+          'application/json': { schema: { 'x-ts-type': Event } }
+        },
       },
     },
   })
-  async create(@requestBody() event: Event): Promise<Event> {
-    const newEvent = await this.eventRepository.create(event);
+  async create(@requestBody({
+    content: {
+      'application/x-www-form-urlencoded': {
+        schema: {
+          type: 'object'
+        },
+      },
+    },
+  }) request: postRequest): Promise<Event[]> {
+    const events: Event[] = JSON.parse(request.models);
+    const eventsClearId = events.map(event => {
+      delete event.id;
 
-    if (newEvent.recurrenceRule) {
-      const options = RRule.parseString(newEvent.recurrenceRule)
-      options.dtstart = new Date(newEvent.start);
-      const rrule = new RRule(options);
+      return event;
+    });
+    const newEvent = await this.eventRepository.createAll(eventsClearId);
 
-      const actions = rrule.all().map((date: Date) => {
-        return {
-          start: date.toISOString(),
-          eventId: newEvent.id
-        }
-      });
-
-      await this.actionRepository.createAll(actions);
-    } else {
-      await this.actionRepository.create({
-        start: newEvent.start,
-        eventId: newEvent.id
-      });
+    async function asyncForEach(array: Event[], callback: Function) {
+      for (let index = 0; index < array.length; index++) {
+        await callback(array[index], index, array);
+      }
     }
 
+    asyncForEach(newEvent, async (eventItem: Event) => {
+      if (eventItem.recurrenceRule) {
+        const options = RRule.parseString(eventItem.recurrenceRule)
+        options.dtstart = new Date(eventItem.start);
+        const rrule = new RRule(options);
+
+        const actions = rrule.all().map((date: Date) => {
+          return {
+            start: date.toISOString(),
+            eventId: eventItem.id
+          }
+        });
+
+        await this.actionRepository.createAll(actions);
+      } else {
+        await this.actionRepository.create({
+          start: eventItem.start,
+          eventId: eventItem.id
+        });
+      }
+    });
     return newEvent;
   }
 
@@ -88,10 +117,16 @@ export class EventController {
     },
   })
   async find(
-    @param.query.object('filter', getFilterSchemaFor(Event)) filter?: Filter,
-  ): Promise<Event[]> {
-    console.log('!!!');
-    return await this.eventRepository.find(filter);
+    @param.query.object('filter', getFilterSchemaFor(Event)) filter?: Filter
+  ) {
+    if (filter && filter.limit && filter.limit.toString() === '0') {
+      delete filter.limit;
+    }
+
+    return {
+      models: await this.eventRepository.find(filter),
+      total: (await this.eventRepository.count()).count
+    }
   }
 
   @patch('/events', {

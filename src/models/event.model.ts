@@ -73,6 +73,18 @@ export class Event extends Entity {
   @hasMany(() => Action)
   actions?: Action[];
 
+  @property({
+    type: 'string',
+    default: ''
+  })
+  tipBuy?: string
+
+  @property({
+    type: 'string',
+    default: ''
+  })
+  tipTicket?: string
+
   constructor(data?: Partial<Event>) {
     super(data);
   }
