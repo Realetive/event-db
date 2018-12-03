@@ -15,6 +15,12 @@ export class Action extends Entity {
   })
   start: string;
 
+  @property({
+    type: 'string',
+    required: true,
+  })
+  _eventId: string;
+
   @belongsTo(() => Event)
   eventId: string;
 

@@ -25,8 +25,4 @@ export class EventRepository extends DefaultCrudRepository<
       actionRepositoryGetter
     )
   }
-
-  public createEvent(event: Event) {
-    //
-  }
 }

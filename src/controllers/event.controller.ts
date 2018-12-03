@@ -1,6 +1,4 @@
 import {
-  Count,
-  CountSchema,
   Filter,
   repository,
   Where,
@@ -10,15 +8,13 @@ import {
   param,
   get,
   getFilterSchemaFor,
-  getWhereSchemaFor,
   patch,
   del,
   requestBody,
 } from '@loopback/rest';
 import { Event, Action } from '../models';
 import { EventRepository, ActionRepository } from '../repositories';
-import { RRule, RRuleSet, rrulestr } from 'rrule';
-import { remove } from 'fs-extra';
+import { RRule } from 'rrule';
 
 interface postRequest {
   models: string
@@ -33,7 +29,6 @@ export class EventController {
   ) { }
 
   @post('/events', {
-
     responses: {
       '200': {
         description: 'Event model instance',
@@ -43,65 +38,31 @@ export class EventController {
       },
     },
   })
-  async create(@requestBody({
-    content: {
-      'application/x-www-form-urlencoded': {
-        schema: {
-          type: 'object'
-        },
-      },
-    },
-  }) request: postRequest): Promise<Event[]> {
-    const events: Event[] = JSON.parse(request.models);
-    const eventsClearId = events.map(event => {
-      delete event.id;
+  async create(@requestBody() event: Event): Promise<Event> {
+    console.log('[post]event', event);
+    const newEvent = await this.eventRepository.create(event);
 
-      return event;
-    });
-    const newEvent = await this.eventRepository.createAll(eventsClearId);
+    if (newEvent.recurrenceRule) {
+      const options = RRule.parseString(newEvent.recurrenceRule)
+      options.dtstart = new Date(newEvent.start);
+      const rrule = new RRule(options);
 
-    async function asyncForEach(array: Event[], callback: Function) {
-      for (let index = 0; index < array.length; index++) {
-        await callback(array[index], index, array);
-      }
+      const actions = rrule.all().map((date: Date) => {
+        return {
+          start: date.toISOString(),
+          _eventId: newEvent.id
+        }
+      });
+
+      await this.actionRepository.createAll(actions);
+    } else {
+      await this.actionRepository.create({
+        start: newEvent.start,
+        _eventId: newEvent.id
+      });
     }
 
-    asyncForEach(newEvent, async (eventItem: Event) => {
-      if (eventItem.recurrenceRule) {
-        const options = RRule.parseString(eventItem.recurrenceRule)
-        options.dtstart = new Date(eventItem.start);
-        const rrule = new RRule(options);
-
-        const actions = rrule.all().map((date: Date) => {
-          return {
-            start: date.toISOString(),
-            eventId: eventItem.id
-          }
-        });
-
-        await this.actionRepository.createAll(actions);
-      } else {
-        await this.actionRepository.create({
-          start: eventItem.start,
-          eventId: eventItem.id
-        });
-      }
-    });
     return newEvent;
-  }
-
-  @get('/events/count', {
-    responses: {
-      '200': {
-        description: 'Event model count',
-        content: { 'application/json': { schema: CountSchema } }
-      },
-    },
-  })
-  async count(
-    @param.query.object('where', getWhereSchemaFor(Event)) where?: Where,
-  ): Promise<Count> {
-    return await this.eventRepository.count(where);
   }
 
   @get('/events', {
@@ -123,37 +84,7 @@ export class EventController {
       delete filter.limit;
     }
 
-    return {
-      models: await this.eventRepository.find(filter),
-      total: (await this.eventRepository.count()).count
-    }
-  }
-
-  @patch('/events', {
-    responses: {
-      '200': {
-        description: 'Event PATCH success count',
-        content: { 'application/json': { schema: CountSchema } },
-      },
-    },
-  })
-  async updateAll(
-    @requestBody() event: Event,
-    @param.query.object('where', getWhereSchemaFor(Event)) where?: Where,
-  ): Promise<Count> {
-    return await this.eventRepository.updateAll(event, where);
-  }
-
-  @get('/events/{id}', {
-    responses: {
-      '200': {
-        description: 'Event model instance',
-        content: { 'application/json': { schema: { 'x-ts-type': Event } } },
-      },
-    },
-  })
-  async findById(@param.path.string('id') id: string): Promise<Event> {
-    return await this.eventRepository.findById(id);
+    return await this.eventRepository.find(filter);
   }
 
   @patch('/events/{id}', {
@@ -165,19 +96,56 @@ export class EventController {
   })
   async updateById(
     @param.path.string('id') id: string,
-    @requestBody() event: Event,
+    @requestBody() event: Event
   ): Promise<void> {
     await this.eventRepository.updateById(id, event);
+
+    if (event.recurrenceException) {
+      async function asyncForEach(array: string[], callback: Function) {
+        for (let index = 0; index < array.length; index++) {
+          await callback(array[index], index, array);
+        }
+      }
+
+      const recurrenceException = event.recurrenceException.split(',');
+
+      console.log('recurrenceException', recurrenceException);
+
+      await asyncForEach(recurrenceException, async (date: string) => {
+        function parseDate(input: string) {
+          return new Date(Date.UTC(
+            parseInt(input.slice(0, 4), 10),
+            parseInt(input.slice(4, 6), 10) - 1,
+            parseInt(input.slice(6, 8), 10),
+            parseInt(input.slice(9, 11), 10),
+            parseInt(input.slice(11, 13), 10),
+            parseInt(input.slice(13, 15), 10)
+          ));
+        }
+
+        const action: Where<Action> = {
+          start: parseDate(date).toISOString(),
+          _eventId: id
+        };
+
+        await this.actionRepository.deleteAll(action, { strictObjectIDCoercion: true });
+      });
+    } else {
+      await this.actionRepository.deleteAll({ _eventId: id }, { strictObjectIDCoercion: true });
+    }
   }
 
   @del('/events/{id}', {
     responses: {
       '204': {
-        description: 'Event DELETE success',
+        description: 'Event DELETE success'
       },
     },
   })
-  async deleteById(@param.path.string('id') id: string): Promise<void> {
+  async delete(
+    @param.path.string('id') id: string,
+  ): Promise<void> {
     await this.eventRepository.deleteById(id);
+    await this.actionRepository.deleteAll({ _eventId: id }, { strictObjectIDCoercion: true });
   }
 }
